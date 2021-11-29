@@ -1,0 +1,257 @@
+version: '3'
+
+########################
+#  SERVICES TO LAUNCH  #
+########################
+services:
+    # ----------------------------------------
+    # PORTAINER
+    # Docker Container Management
+    # ----------------------------------------
+    portainer:
+        image: portainer/portainer-ce
+        container_name: portainer
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        expose:
+            - 9000
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/portainer:/data'
+            - '/var/run/docker.sock:/var/run/docker.sock'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=9000'
+            - 'traefik.frontend.rule=Host:portainer.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+
+    # ----------------------------------------
+    # ORGANIZR
+    # Web Frontend for Management
+    # ----------------------------------------
+    organizr:
+        image: organizr/organizr
+        container_name: organizr
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        expose:
+            - 80
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/organizr:/config'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=80'
+            - 'traefik.frontend.rule=Host:manage.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+
+    # ----------------------------------------
+    # SONARR
+    # TV Series Management
+    # ----------------------------------------
+    sonarr:
+        image: linuxserver/sonarr
+        container_name: sonarr
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        expose:
+            - 8989
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/sonarr:/config'
+            - '${TORRENTS_PATH}/completed:/data/completed'
+            - '${MEDIA_BASE_PATH}/series:/tv'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=8989'
+            - 'traefik.frontend.rule=Host:sonarr.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+
+    # ----------------------------------------
+    # RADARR
+    # Movie Management
+    # ----------------------------------------
+    radarr:
+        image: linuxserver/radarr
+        container_name: radarr
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        expose:
+            - 7878
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/radarr:/config'
+            - '${TORRENTS_PATH}/completed:/data/completed'
+            - '${MEDIA_BASE_PATH}/movies:/movies'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=7878'
+            - 'traefik.frontend.rule=Host:radarr.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+
+    # ----------------------------------------
+    # JACKETT
+    # RSS/TORZNAB Feed Creator
+    # ----------------------------------------
+    jackett:
+        image: linuxserver/jackett
+        container_name: jackett
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        expose:
+            - 9117
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/jackett:/config'
+            - '${TORRENTS_PATH}/completed:/downloads'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=9117'
+            - 'traefik.frontend.rule=Host:jackett.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+
+    # ----------------------------------------
+    # WATCHTOWER
+    # Automatic Update Service for Docker VMs
+    # ----------------------------------------
+    watchtower:
+        image: v2tec/watchtower
+        container_name: watchtower
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - internal
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+            - WATCHTOWER_NOTIFICATIONS=email
+            - WATCHTOWER_NOTIFICATION_EMAIL_FROM=${SMTP_FROM}
+            - WATCHTOWER_NOTIFICATION_EMAIL_TO=${WATCHTOWER_EMAIL}
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=${SMTP_SERVER}
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=${SMTP_PORT}
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=${SMTP_USER}
+            - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${SMTP_PASS}
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+            - '/etc/ssl/certs:/etc/ssl/certs'
+        command: --schedule @midnight --cleanup
+        labels:
+            - 'traefik.enable=false'
+
+    # ----------------------------------------
+    # TRAEFIK
+    # Reverse Proxy + SSL Support
+    # ----------------------------------------
+    traefik:
+        image: traefik:v1.7.16
+        container_name: traefik
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        ports:
+            - '80:80'
+            - '443:443'
+            - '8080:8080'
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '/var/run/docker.sock:/var/run/docker.sock'
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/traefik:/etc/traefik/acme'
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/traefik/traefik.toml:/traefik.toml'
+        command:
+            - --docker
+            - --api
+            - --loglevel=debug
+            - "--entryPoints=Name:https Address::443 TLS"
+            - "--entryPoints=Name:http Address::80 Redirect.EntryPoint:https"
+            - --acme.entrypoint=https
+            - --acme=true
+            - --acme.domains=${DOMAIN}
+            - --acme.email=${EMAIL}
+            - --acme.ondemand=true
+            - --acme.onhostrule
+            - --acme.httpchallenge
+            - --acme.httpchallenge.entrypoint=http
+            - --acme.storage=etc/traefik/acme/acme.json
+            - --docker.watch
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=8080'
+            - 'traefik.frontend.rule=Host:traefik.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+            - 'traefik.frontend.auth.basic=${TRAEFIK_AUTH}'
+
+########################
+# GLOBAL CONFIGURATION #
+########################
+networks:
+    internal:
+    web:
