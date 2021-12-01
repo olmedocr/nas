@@ -5,6 +5,38 @@ version: '3'
 ########################
 services:
     # ----------------------------------------
+    # OVERSEERR
+    # Media library management
+    # ----------------------------------------
+    overseerr:
+        image: sctx/overseerr:latest
+        container_name: overseerr
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks: 
+            - web
+        expose:
+            - 5055
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/overseerr:/config'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=5055'
+            - 'traefik.frontend.rule=Host:overseerr.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+        
+
+    # ----------------------------------------
     # PORTAINER
     # Docker Container Management
     # ----------------------------------------
@@ -37,37 +69,6 @@ services:
             - 'traefik.frontend.entryPoints=https'
 
     # ----------------------------------------
-    # ORGANIZR
-    # Web Frontend for Management
-    # ----------------------------------------
-    organizr:
-        image: organizr/organizr
-        container_name: organizr
-        restart: unless-stopped
-        logging:
-            driver: 'json-file'
-            options:
-                max-file: '${LOG_FILE_NUM}'
-                max-size: '${LOG_FILE_SIZE}'
-        networks:
-            - web
-        expose:
-            - 80
-        environment:
-            - TZ=${TZ}
-            - PUID=${PUID}
-            - PGID=${PGID}
-        volumes:
-            - '${SYNOLOGY_BASE_DOCKER_PATH}/organizr:/config'
-            - '/etc/localtime:/etc/localtime:ro'
-        labels:
-            - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
-            - 'traefik.port=80'
-            - 'traefik.frontend.rule=Host:manage.${DOMAIN}'
-            - 'traefik.frontend.entryPoints=https'
-
-    # ----------------------------------------
     # SONARR
     # TV Series Management
     # ----------------------------------------
@@ -81,7 +82,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - web
+            - internal
         expose:
             - 8989
         environment:
@@ -89,13 +90,13 @@ services:
             - PUID=${PUID}
             - PGID=${PGID}
         volumes:
-            - '${SYNOLOGY_BASE_DOCKER_PATH}/sonarr:/config'
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/sonarr:/app/config'
             - '${TORRENTS_PATH}/completed:/data/completed'
             - '${MEDIA_BASE_PATH}/series:/tv'
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.docker.network=${STACK_NAME}_internal'
             - 'traefik.port=8989'
             - 'traefik.frontend.rule=Host:sonarr.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
@@ -114,7 +115,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - web
+            - internal
         expose:
             - 7878
         environment:
@@ -128,7 +129,7 @@ services:
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.docker.network=${STACK_NAME}_internal'
             - 'traefik.port=7878'
             - 'traefik.frontend.rule=Host:radarr.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
@@ -147,7 +148,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - web
+            - internal
         expose:
             - 9117
         environment:
@@ -160,7 +161,7 @@ services:
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.docker.network=${STACK_NAME}_internal'
             - 'traefik.port=9117'
             - 'traefik.frontend.rule=Host:jackett.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
