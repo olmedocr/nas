@@ -18,7 +18,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - web
+            - internal
         ports:
             - '${IP_ADDRESS}:8118:8118'
             - '${IP_ADDRESS}:58846:58846'
@@ -35,7 +35,7 @@ services:
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.docker.network=${STACK_NAME}_internal'
             - 'traefik.port=8112'
             - 'traefik.frontend.rule=Host:deluge.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
@@ -118,7 +118,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - web
+            - internal
         expose:
             - 8989
         environment:
@@ -132,7 +132,7 @@ services:
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.docker.network=${STACK_NAME}_internal'
             - 'traefik.port=8989'
             - 'traefik.frontend.rule=Host:sonarr.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
@@ -151,7 +151,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - web
+            - internal
         expose:
             - 7878
         environment:
@@ -165,7 +165,7 @@ services:
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.docker.network=${STACK_NAME}_internal'
             - 'traefik.port=7878'
             - 'traefik.frontend.rule=Host:radarr.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
@@ -229,7 +229,6 @@ services:
         volumes:
             - '/var/run/docker.sock:/var/run/docker.sock'
             - '${SYNOLOGY_BASE_DOCKER_PATH}/traefik:/etc/traefik/acme'
-            - '${SYNOLOGY_BASE_DOCKER_PATH}/traefik/traefik.toml:/traefik.toml'
         command:
             - --docker
             - --api
