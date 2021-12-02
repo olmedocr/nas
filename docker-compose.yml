@@ -5,6 +5,42 @@ version: '3'
 ########################
 services:
     # ----------------------------------------
+    # DELUGE
+    # Deluge Torrent Client
+    # ----------------------------------------
+    deluge:
+        image: linuxserver/deluge
+        container_name: deluge
+        restart: unless-stopped
+        logging:
+            driver: 'json-file'
+            options:
+                max-file: '${LOG_FILE_NUM}'
+                max-size: '${LOG_FILE_SIZE}'
+        networks:
+            - web
+        ports:
+            - '${IP_ADDRESS}:8118:8118'
+            - '${IP_ADDRESS}:58846:58846'
+            - '${IP_ADDRESS}:58946:58946'
+        expose:
+            - 8112
+        environment:
+            - TZ=${TZ}
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${TORRENTS_PATH}:/data'
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/deluge:/config'
+            - '/etc/localtime:/etc/localtime:ro'
+        labels:
+            - 'traefik.enable=true'
+            - 'traefik.docker.network=${STACK_NAME}_web'
+            - 'traefik.port=8112'
+            - 'traefik.frontend.rule=Host:deluge.${DOMAIN}'
+            - 'traefik.frontend.entryPoints=https'
+
+    # ----------------------------------------
     # OVERSEERR
     # Media library management
     # ----------------------------------------
@@ -26,7 +62,7 @@ services:
             - PUID=${PUID}
             - PGID=${PGID}
         volumes:
-            - '${SYNOLOGY_BASE_DOCKER_PATH}/overseerr:/config'
+            - '${SYNOLOGY_BASE_DOCKER_PATH}/overseerr:/app/config'
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
@@ -82,7 +118,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - internal
+            - web
         expose:
             - 8989
         environment:
@@ -91,12 +127,12 @@ services:
             - PGID=${PGID}
         volumes:
             - '${SYNOLOGY_BASE_DOCKER_PATH}/sonarr:/app/config'
-            - '${TORRENTS_PATH}/completed:/data/completed'
+            - '${TORRENTS_PATH}:/data'
             - '${MEDIA_BASE_PATH}/series:/tv'
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_internal'
+            - 'traefik.docker.network=${STACK_NAME}_web'
             - 'traefik.port=8989'
             - 'traefik.frontend.rule=Host:sonarr.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
@@ -115,7 +151,7 @@ services:
                 max-file: '${LOG_FILE_NUM}'
                 max-size: '${LOG_FILE_SIZE}'
         networks:
-            - internal
+            - web
         expose:
             - 7878
         environment:
@@ -124,46 +160,14 @@ services:
             - PGID=${PGID}
         volumes:
             - '${SYNOLOGY_BASE_DOCKER_PATH}/radarr:/config'
-            - '${TORRENTS_PATH}/completed:/data/completed'
+            - '${TORRENTS_PATH}:/data'
             - '${MEDIA_BASE_PATH}/movies:/movies'
             - '/etc/localtime:/etc/localtime:ro'
         labels:
             - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_internal'
+            - 'traefik.docker.network=${STACK_NAME}_web'
             - 'traefik.port=7878'
             - 'traefik.frontend.rule=Host:radarr.${DOMAIN}'
-            - 'traefik.frontend.entryPoints=https'
-
-    # ----------------------------------------
-    # JACKETT
-    # RSS/TORZNAB Feed Creator
-    # ----------------------------------------
-    jackett:
-        image: linuxserver/jackett
-        container_name: jackett
-        restart: unless-stopped
-        logging:
-            driver: 'json-file'
-            options:
-                max-file: '${LOG_FILE_NUM}'
-                max-size: '${LOG_FILE_SIZE}'
-        networks:
-            - internal
-        expose:
-            - 9117
-        environment:
-            - TZ=${TZ}
-            - PUID=${PUID}
-            - PGID=${PGID}
-        volumes:
-            - '${SYNOLOGY_BASE_DOCKER_PATH}/jackett:/config'
-            - '${TORRENTS_PATH}/completed:/downloads'
-            - '/etc/localtime:/etc/localtime:ro'
-        labels:
-            - 'traefik.enable=true'
-            - 'traefik.docker.network=${STACK_NAME}_internal'
-            - 'traefik.port=9117'
-            - 'traefik.frontend.rule=Host:jackett.${DOMAIN}'
             - 'traefik.frontend.entryPoints=https'
 
     # ----------------------------------------
